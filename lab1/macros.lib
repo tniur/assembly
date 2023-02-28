@@ -1,0 +1,39 @@
+;========================= Print one letter ==========================
+_print_letter_ macro letter
+
+    push AX
+    push DX
+    
+    mov DL, letter
+    mov AH, 02
+    int 21h
+    
+    pop DX
+    pop AX
+endm
+
+;========================== Start new line ===========================
+_new_line_ macro
+    _print_letter_ CR
+    _print_letter_ LF
+endm
+
+;========================== Print Message ============================
+_print_message_ macro message
+local msg, skip
+    push AX
+    push DX
+
+    mov DX, offset msg
+    mov AH, 09h
+    int 21h
+
+    pop DX
+    pop AX
+
+    jmp skip
+    msg DB message,'$'
+    skip:
+endm
+
+;=====================================================================
