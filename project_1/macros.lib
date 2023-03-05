@@ -62,25 +62,45 @@ endm
 
 ;======================= Read PSP Parameters =========================
 
-_read_psp_parameters_ macro FileName, StopParseSign
-local cycle, end
+_read_psp_parameters_ macro InputFile, OutputFile
+local cycle_1, cycle_2, _end, parse_outputfile_name
     push DI
     push AX
-    mov DI, offset FileName[2]
-    cycle:
+    inc SI
+    inc SI
+    mov DI, offset InputFile[2]
+    cycle_1:
         mov AL, byte ptr [SI] 
-        cmp AL, StopParseSign
-        je end
+        cmp AL, Space
+        je parse_outputfile_name
 
         mov [DI], AL
         inc SI
         inc DI
         
-        jmp cycle
+        jmp cycle_1
+    
+parse_outputfile_name:
+        inc SI
+        mov DI, offset OutputFile[2]
+        cycle_2:
+            mov AL, byte ptr [SI] 
+            cmp AL, CR
+            je _end
 
-    end:
+            mov [DI], AL
+            inc SI
+            inc DI
+            
+            jmp cycle_2
+
+    _end:
     pop AX
     pop DI
 endm
+
+;============================= Read File =============================
+
+
 
 ;=====================================================================

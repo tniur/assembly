@@ -21,29 +21,44 @@ ask_filenames:
     _new_line_
     _print_message_ 'Input filename for read > '
     mov AH, 0Ah
-    lea DX, NameReadFile
+    lea DX, InputFileName
     int 21h
     xor BH, BH
-    mov BL, NameReadFile[1]
-    mov NameReadFile[BX+2], 0
+    mov BL, InputFileName[1]
+    mov InputFileName[BX+2], 0
 
     _new_line_
     _print_message_ 'Input filename for write > '
-    lea DX, NameWriteFile
+    lea DX, OutputFileName
     int 21h
-    mov BL, NameWriteFile[1]
-    mov NameWriteFile[BX+2], 0
+    mov BL, OutputFileName[1]
+    mov OutputFileName[BX+2], 0
 
-;-----------------------  Read PSP Parameters --------------------------
+    jmp open_input_file
 
-read_psp_parameters:
-    inc SI
-    _read_psp_parameters_ NameReadFile, Space
-    inc SI
-    _read_psp_parameters_ NameWriteFile, CR
+;-----------------------  Read PSP Parameters -------------------------
+
+read_psp_parameters:    
+    _read_psp_parameters_ InputFileName, OutputFileName
+
+;-------------------------  Open read file ---------------------------
+
+open_input_file:
+    mov AX, 3D00h
+    mov DX, offset InputFileName[2]
+    int 21h
+    jnc openOK
+    _new_line_
+    _print_message_ '*** ERROR open input file ***'
+    jmp _end
+
+openOK:
+    _new_line_
+    _print_message_ '*** SUCCES open input file ***'
 
 ;---------------------------------------------------------------------
 
+_end:
 int 20h
 
 ;============================ Procedures =============================
@@ -57,8 +72,8 @@ int 20h
     LF      EQU 0Ah
     Space   EQU 20h
     
-    NameReadFile    DB 14,0,14 dup (0)
-    NameWriteFile   DB 14,0,14 dup (0)
+    InputFileName    DB 14,0,14 dup (0)
+    OutputFileName   DB 14,0,14 dup (0)
 
 ;=====================================================================
 
