@@ -1,4 +1,5 @@
 ;========================= Print one letter ==========================
+
 _print_letter_ macro letter
 
     push AX
@@ -13,12 +14,14 @@ _print_letter_ macro letter
 endm
 
 ;========================== Start new line ===========================
+
 _new_line_ macro
     _print_letter_ CR
     _print_letter_ LF
 endm
 
 ;========================== Print Message ============================
+
 _print_message_ macro message
 local msg, skip
     push AX
@@ -34,6 +37,50 @@ local msg, skip
     jmp skip
     msg DB message,'$'
     skip:
+endm
+
+;========================== Print File Name ==========================
+
+_print_file_name_ macro FileName
+
+    push AX
+    push DX
+    push BX
+
+    xor BH, BH
+    mov BL, FileName[1]
+    mov FileName[BX+2], '$'
+    mov DX, offset FileName[2]
+    mov AH, 09h
+    int 21h
+    mov FileName[BX+2], 0
+
+    pop BX
+    pop DX
+    pop AX
+endm
+
+;======================= Read PSP Parameters =========================
+
+_read_psp_parameters_ macro FileName, StopParseSign
+local cycle, end
+    push DI
+    push AX
+    mov DI, offset FileName[2]
+    cycle:
+        mov AL, byte ptr [SI] 
+        cmp AL, StopParseSign
+        je end
+
+        mov [DI], AL
+        inc SI
+        inc DI
+        
+        jmp cycle
+
+    end:
+    pop AX
+    pop DI
 endm
 
 ;=====================================================================
