@@ -59,7 +59,7 @@ openInputOK:
 
 ;------------------------- Read input file ---------------------------
 
-ReadFile InputDescriptor, Buffer, BufferSize, ReadByte
+ReadFile InputDescriptor, InputBuffer, InputBufferSize, ReadByte
 CloseFile InputDescriptor    
 
 ;------------------------- Open output file --------------------------
@@ -78,10 +78,28 @@ openOutputOK:
     _new_line_
     _print_message_ '*** SUCCESS open output file ***'
 
+;------------------------ Work with buffer ---------------------------
+
+mov CX, ReadByte
+mov SI, offset InputBuffer
+mov DI, offset OutputBuffer
+cycle:
+    mov AL, byte ptr [SI]
+    cmp AL, Space
+    jne continue
+    
+    mov AL, TAB
+
+    continue:
+    mov byte ptr [DI], AL
+    inc SI
+    inc DI
+    loop cycle
+
 ;------------------------ Write output file --------------------------
 
-WriteFile OutputDescriptor, Buffer, ReadByte, WriteByte
-CloseFile OutputDescriptor    
+WriteFile OutputDescriptor, OutputBuffer, ReadByte
+CloseFile OutputDescriptor
 
 ;---------------------------------------------------------------------
 
@@ -95,19 +113,25 @@ int 20h
 
 ;=============================== DATA ================================
 
-    CR          EQU 0Dh
-    LF          EQU 0Ah
-    Space       EQU 20h
-    BufferSize EQU 2048
+    CR                  EQU 0Dh
+    LF                  EQU 0Ah
+    LetterB             EQU 0C2h
+    LetterK             EQU 0CAh
+    LetterP             EQU 0CFh
+    LetterC             EQU 0D1h
+    Space               EQU 20h
+    TAB                 EQU 09h
+    InputBufferSize     EQU 2048
+    OutputBufferSize    EQU 4096
     
-    InputFileName    DB 14,0,14 dup (0)
-    OutputFileName   DB 14,0,14 dup (0)
+    InputFileName       DB  14,0,14 dup (0)
+    OutputFileName      DB  14,0,14 dup (0)
 
-    InputDescriptor  DW ?
-    OutputDescriptor  DW ?
-    Buffer      DB BufferSize dup (?)
-    ReadByte    DW ?
-    WriteByte    DW ?
+    InputDescriptor     DW  ?
+    OutputDescriptor    DW  ?
+    InputBuffer         DB  InputBufferSize dup (?)
+    OutputBuffer        DB  OutputBufferSize dup (?)
+    ReadByte            DW  ?
 
 ;=====================================================================
 
