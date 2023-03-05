@@ -41,20 +41,47 @@ ask_filenames:
 read_psp_parameters:    
     _read_psp_parameters_ InputFileName, OutputFileName
 
-;-------------------------  Open read file ---------------------------
+;-------------------------- Open input file ---------------------------
 
 open_input_file:
     mov AX, 3D00h
     mov DX, offset InputFileName[2]
     int 21h
-    jnc openOK
+    jnc openInputOK
     _new_line_
     _print_message_ '*** ERROR open input file ***'
     jmp _end
 
-openOK:
+openInputOK:
+    mov InputDescriptor, AX
     _new_line_
-    _print_message_ '*** SUCCES open input file ***'
+    _print_message_ '*** SUCCESS open input file ***'
+
+;------------------------- Read input file ---------------------------
+
+ReadFile InputDescriptor, Buffer, BufferSize, ReadByte
+CloseFile InputDescriptor    
+
+;------------------------- Open output file --------------------------
+
+open_output_file:
+    mov AX, 3D01h
+    mov DX, offset OutputFileName[2]
+    int 21h
+    jnc openOutputOK
+    _new_line_
+    _print_message_ '*** ERROR open output file ***'
+    jmp _end
+
+openOutputOK:
+    mov OutputDescriptor, AX
+    _new_line_
+    _print_message_ '*** SUCCESS open output file ***'
+
+;------------------------ Write output file --------------------------
+
+WriteFile OutputDescriptor, Buffer, ReadByte, WriteByte
+CloseFile OutputDescriptor    
 
 ;---------------------------------------------------------------------
 
@@ -68,12 +95,19 @@ int 20h
 
 ;=============================== DATA ================================
 
-    CR      EQU 0Dh
-    LF      EQU 0Ah
-    Space   EQU 20h
+    CR          EQU 0Dh
+    LF          EQU 0Ah
+    Space       EQU 20h
+    BufferSize EQU 2048
     
     InputFileName    DB 14,0,14 dup (0)
     OutputFileName   DB 14,0,14 dup (0)
+
+    InputDescriptor  DW ?
+    OutputDescriptor  DW ?
+    Buffer      DB BufferSize dup (?)
+    ReadByte    DW ?
+    WriteByte    DW ?
 
 ;=====================================================================
 

@@ -101,6 +101,82 @@ endm
 
 ;============================= Read File =============================
 
+ReadFile macro Descriptor, Buffer, Counter, RealRead
+local read_error, read_success, skip
+    push AX
+    clc
+    mov BX, Descriptor
+    mov CX, Counter
+    lea DX, Buffer
+    mov AH, 3Fh
+    int 21h
+    jnc read_success
+    jmp read_error  
+    
+    read_success:
+        mov RealRead, AX
+        _new_line_
+        _print_message_ '*** Read Success ***'
+        jmp skip
+    
+    read_error:
+        _new_line_
+        _print_message_ '!!! Read Error !!!'
+    skip: 
+        pop AX
+endm
 
+;============================ Write File =============================
+
+WriteFile macro Descriptor, Buffer, Counter, RealWrite
+local write_error, write_success, skip
+    push AX
+    clc
+    mov BX, Descriptor
+    mov CX, Counter
+    lea DX, Buffer
+    mov AH, 40h
+    int 21h
+    jnc write_success
+    jmp write_error
+    write_success:
+        mov RealWrite, AX
+        _new_line_
+        _print_message_ '*** Write Success ***'
+        jmp skip
+    write_error:
+        _new_line_
+        _print_message_ '!!! Write Error !!!'
+    skip:
+    pop AX
+endm
+
+;============================ Close File =============================
+
+CloseFile macro Descriptor
+local close_success, close_error, skip
+    push AX
+    push BX
+    
+    clc
+    mov BX, Descriptor
+    mov AH, 3Eh
+    jnc close_success
+    jmp close_error
+    
+    close_success:
+        _new_line_
+        _print_message_ '*** Close Success ***'
+        jmp skip
+
+    close_error:
+        _new_line_
+        _print_message_ '!!! Close Error !!!'
+
+    skip:
+    pop BX  
+    pop AX
+
+endm
 
 ;=====================================================================
