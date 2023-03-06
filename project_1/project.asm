@@ -86,15 +86,46 @@ mov DI, offset OutputBuffer
 cycle:
     mov AL, byte ptr [SI]
     cmp AL, Space
-    jne continue
-    
-    mov AL, TAB
+    je is_space
+    mov AX, [SI]
+    cmp AX, VK
+    je is_VK
 
-    continue:
+    mov AL, byte ptr [SI] 
     mov byte ptr [DI], AL
     inc SI
     inc DI
+    jmp next
+
+    is_space:
+        mov AL, TAB
+        mov byte ptr [DI], AL
+        inc SI
+        inc DI
+        jmp next
+    
+    is_VK:
+        mov word ptr [DI], AX
+        add DI, 2
+        mov AX, PS
+        mov word ptr [DI], AX
+        add DI, 2
+        add SI, 2
+        add ReadByte, 2
+    
+    next:
     loop cycle
+
+;------------------------ Print new buffer ---------------------------
+
+mov CX, ReadByte
+mov SI, offset OutputBuffer
+_new_line_
+print_buffer:
+    mov AL, [SI]
+    _print_letter_ AL
+    inc SI
+    loop print_buffer
 
 ;------------------------ Write output file --------------------------
 
@@ -115,10 +146,12 @@ int 20h
 
     CR                  EQU 0Dh
     LF                  EQU 0Ah
-    LetterB             EQU 0C2h
-    LetterK             EQU 0CAh
-    LetterP             EQU 0CFh
-    LetterC             EQU 0D1h
+    ;LetterB             EQU 0C2h
+    ;LetterK             EQU 0CAh
+    ;LetterP             EQU 0CFh
+    ;LetterC             EQU 0D1h
+    VK                  EQU 4B56h
+    PS                  EQU 5350h
     Space               EQU 20h
     TAB                 EQU 09h
     InputBufferSize     EQU 2048
