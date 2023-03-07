@@ -16,27 +16,6 @@ endm
 ;========================== Print two bytes ===========================
 
 _print_word_ macro src
-local print_DL, print_hex, print_
-
-    print_DL proc near
-        push DX
-        rcr DL,4
-        call print_hex
-        pop DX
-        call print_hex
-        ret
-    print_DL endp
-
-    print_hex proc near
-        and DL, 0Fh
-        add DL, 30h
-        cmp DL, 3Ah
-        jl print_
-        add DL, 07h
-        print_:
-        int 21H
-        ret
-    print_hex endp
 
     push AX
     push BX
@@ -102,45 +81,6 @@ _print_file_name_ macro FileName
     pop BX
     pop DX
     pop AX
-endm
-
-;======================= Read PSP Parameters =========================
-
-_read_psp_parameters_ macro InputFile, OutputFile
-local cycle_1, cycle_2, _end, parse_outputfile_name
-    push DI
-    push AX
-    inc SI
-    inc SI
-    mov DI, offset InputFile[2]
-    cycle_1:
-        mov AL, byte ptr [SI] 
-        cmp AL, Space
-        je parse_outputfile_name
-
-        mov [DI], AL
-        inc SI
-        inc DI
-        
-        jmp cycle_1
-    
-parse_outputfile_name:
-        inc SI
-        mov DI, offset OutputFile[2]
-        cycle_2:
-            mov AL, byte ptr [SI] 
-            cmp AL, CR
-            je _end
-
-            mov [DI], AL
-            inc SI
-            inc DI
-            
-            jmp cycle_2
-
-    _end:
-    pop AX
-    pop DI
 endm
 
 ;============================= Read File =============================

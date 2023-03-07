@@ -39,7 +39,35 @@ ask_filenames:
 ;-----------------------  Read PSP Parameters -------------------------
 
 read_psp_parameters:    
-    _read_psp_parameters_ InputFileName, OutputFileName
+    inc SI
+    inc SI
+    mov DI, offset InputFileName[2]
+    cycle_1:
+        mov AL, byte ptr [SI] 
+        cmp AL, Space
+        je parse_outputfile_name
+
+        mov [DI], AL
+        inc SI
+        inc DI
+        
+        jmp cycle_1
+    
+    parse_outputfile_name:
+        inc SI
+        mov DI, offset OutputFileName[2]
+        cycle_2:
+            mov AL, byte ptr [SI] 
+            cmp AL, CR
+            je _end_read
+
+            mov [DI], AL
+            inc SI
+            inc DI
+            
+            jmp cycle_2
+
+    _end_read:
 
 ;-------------------------- Open input file ---------------------------
 
@@ -139,7 +167,30 @@ int 20h
 
 ;============================ Procedures =============================
 
-;----------------------------- Proc name -----------------------------
+;------------------------ Print register DL --------------------------
+
+print_DL proc near
+    push DX
+    rcr DL,4
+    call print_hex
+    pop DX
+    call print_hex
+    ret
+print_DL endp
+
+;---------------------------- Print HEX ------------------------------
+
+print_hex proc near
+    and DL, 0Fh
+    add DL, 30h
+    cmp DL, 3Ah
+    jl print_
+    add DL, 07h
+    print_:
+    int 21H
+    ret
+ print_hex endp
+
 ;---------------------------------------------------------------------
 
 ;=============================== DATA ================================
