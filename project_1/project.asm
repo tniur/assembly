@@ -35,7 +35,6 @@ ask_filenames:
     mov OutputFileName[BX+2], 0
 
     mov DX, offset InputFileName[2]
-    xor BX, BX
     mov BX, offset OutputFileName[2]
 
     jmp open_input_file
@@ -77,7 +76,6 @@ read_psp_parameters:
 
 open_input_file:
     mov AX, 3D00h
-    ;mov DX, offset InputFileName[2]
     int 21h
     jnc openInputOK
     _new_line_
@@ -91,29 +89,40 @@ openInputOK:
 
 ;------------------------- Read input file ---------------------------
 
-ReadFile InputDescriptor, InputBuffer, InputBufferSize, ReadByte
+ReadFile InputDescriptor, InputBuffer, InputBufferSize, ByteInBuffer
 CloseFile InputDescriptor    
 
 ;------------------------- Open output file --------------------------
 
 open_output_file:
     mov AX, 3D01h
-    ;mov DX, offset OutputFileName[2]
+    push DX
     mov DX, BX
     int 21h
+    pop DX
     jnc openOutputOK
-    _new_line_
-    _print_message_ '*** ERROR open output file ***'
-    jmp _end
+    jmp openInputLikeOutput
 
 openOutputOK:
     mov OutputDescriptor, AX
     _new_line_
     _print_message_ '*** SUCCESS open output file ***'
+    jmp work_with_buffer
+
+openInputLikeOutput:
+    mov AH, 3Ch
+    int 21h
+    mov AX, 3D01h
+    int 21h
+    mov OutputDescriptor, AX
+    _new_line_
+    _print_message_ '*** SUCCESS open output file (input)***'
+    
+work_with_buffer:
 
 ;------------------------ Work with buffer ---------------------------
 
-mov CX, ReadByte
+mov CX, ByteInBuffer
 mov SI, offset InputBuffer
 mov DI, offset OutputBuffer
 cycle:
@@ -126,15 +135,11 @@ cycle:
 
     mov AL, byte ptr [SI] 
     mov byte ptr [DI], AL
-    inc SI
-    inc DI
     jmp next
 
     is_space:
         mov AL, TAB
         mov byte ptr [DI], AL
-        inc SI
-        inc DI
         jmp next
     
     is_VK:
@@ -142,16 +147,18 @@ cycle:
         add DI, 2
         mov AX, PS
         mov word ptr [DI], AX
-        add DI, 2
-        add SI, 2
-        add ReadByte, 2
+        inc SI
+        inc DI
+        add ByteInBuffer, 2
     
     next:
+    inc SI
+    inc DI
     loop cycle
 
 ;------------------------ Print new buffer ---------------------------
 
-mov CX, ReadByte
+mov CX, ByteInBuffer
 mov SI, offset OutputBuffer
 _new_line_
 print_buffer:
@@ -162,7 +169,7 @@ print_buffer:
 
 ;------------------------ Write output file --------------------------
 
-WriteFile OutputDescriptor, OutputBuffer, ReadByte
+WriteFile OutputDescriptor, OutputBuffer, ByteInBuffer
 CloseFile OutputDescriptor
 
 ;---------------------------------------------------------------------
@@ -170,48 +177,20 @@ CloseFile OutputDescriptor
 _end:
 int 20h
 
-;============================ Procedures =============================
-
-;------------------------ Print register DL --------------------------
-
-print_DL proc near
-    push DX
-    rcr DL,4
-    call print_hex
-    pop DX
-    call print_hex
-    ret
-print_DL endp
-
-;---------------------------- Print HEX ------------------------------
-
-print_hex proc near
-    and DL, 0Fh
-    add DL, 30h
-    cmp DL, 3Ah
-    jl print_
-    add DL, 07h
-    print_:
-    int 21H
-    ret
- print_hex endp
-
-;---------------------------------------------------------------------
-
 ;=============================== DATA ================================
 
     CR                  EQU 0Dh
     LF                  EQU 0Ah
-    ;LetterB             EQU 0C2h
-    ;LetterK             EQU 0CAh
-    ;LetterP             EQU 0CFh
-    ;LetterC             EQU 0D1h
-    VK                  EQU 4B56h
-    PS                  EQU 5350h
     Space               EQU 20h
     TAB                 EQU 09h
-    InputBufferSize     EQU 2048
-    OutputBufferSize    EQU 4096
+
+    VK                  EQU 4B56h ; eng
+    PS                  EQU 5350h ; eng
+    ;VK                  EQU 0CAC2h ; rus
+    ;PS                  EQU 0D1CFh ; rus
+
+    InputBufferSize     EQU 10000
+    OutputBufferSize    EQU 20000
     
     InputFileName       DB  14,0,14 dup (0)
     OutputFileName      DB  14,0,14 dup (0)
@@ -220,7 +199,7 @@ print_hex proc near
     OutputDescriptor    DW  ?
     InputBuffer         DB  InputBufferSize dup (?)
     OutputBuffer        DB  OutputBufferSize dup (?)
-    ReadByte            DW  ?
+    ByteInBuffer        DW  ?
 
 ;=====================================================================
 
