@@ -34,46 +34,50 @@ ask_filenames:
     mov BL, OutputFileName[1]
     mov OutputFileName[BX+2], 0
 
+    mov DX, offset InputFileName[2]
+    xor BX, BX
+    mov BX, offset OutputFileName[2]
+
     jmp open_input_file
 
 ;-----------------------  Read PSP Parameters -------------------------
 
 read_psp_parameters:    
-    inc SI
-    inc SI
-    mov DI, offset InputFileName[2]
-    cycle_1:
-        mov AL, byte ptr [SI] 
-        cmp AL, Space
-        je parse_outputfile_name
-
-        mov [DI], AL
-        inc SI
-        inc DI
-        
-        jmp cycle_1
     
-    parse_outputfile_name:
-        inc SI
-        mov DI, offset OutputFileName[2]
-        cycle_2:
-            mov AL, byte ptr [SI] 
-            cmp AL, CR
-            je _end_read
+    cld
+    xor CX, CX
+    mov CL, ES:80h
+    mov DI, 81h
+    
+    mov AL, ' '
+    repe scasb
+    dec DI
+    inc CL
+    mov DX, DI
 
-            mov [DI], AL
-            inc SI
-            inc DI
-            
-            jmp cycle_2
+    mov AL, ' '
+    repne scasb
+    dec DI
+    inc CL
+    mov byte ptr [DI], 0
 
-    _end_read:
+    inc DI
+    mov AL, ' '
+    repe scasb
+    dec DI
+    inc CL
+    mov BX, DI
+
+    mov AL, ' '
+    repne scasb
+    dec DI
+    mov byte ptr [DI], 0
 
 ;-------------------------- Open input file ---------------------------
 
 open_input_file:
     mov AX, 3D00h
-    mov DX, offset InputFileName[2]
+    ;mov DX, offset InputFileName[2]
     int 21h
     jnc openInputOK
     _new_line_
@@ -94,7 +98,8 @@ CloseFile InputDescriptor
 
 open_output_file:
     mov AX, 3D01h
-    mov DX, offset OutputFileName[2]
+    ;mov DX, offset OutputFileName[2]
+    mov DX, BX
     int 21h
     jnc openOutputOK
     _new_line_

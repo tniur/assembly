@@ -88,6 +88,9 @@ endm
 ReadFile macro Descriptor, Buffer, Counter, RealRead
 local read_error, read_success, skip
     push AX
+    push BX
+    push CX
+    push DX
     clc
     mov BX, Descriptor
     mov CX, Counter
@@ -107,6 +110,9 @@ local read_error, read_success, skip
         _new_line_
         _print_message_ '!!! Read Error !!!'
     skip: 
+        pop DX
+        pop CX
+        pop BX
         pop AX
 endm
 
