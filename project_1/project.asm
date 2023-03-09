@@ -18,24 +18,35 @@ check_parameters:
 ;---------------------------- Ask Filenames --------------------------
 
 ask_filenames:
+
+    mov AH, 0Ah
+
     _new_line_
     _print_message_ 'Input filename for read > '
-    mov AH, 0Ah
     lea DX, InputFileName
     int 21h
-    xor BH, BH
-    mov BL, InputFileName[1]
-    mov InputFileName[BX+2], 0
 
     _new_line_
     _print_message_ 'Input filename for write > '
     lea DX, OutputFileName
     int 21h
-    mov BL, OutputFileName[1]
-    mov OutputFileName[BX+2], 0
+    
+    cld
+    xor CX, CX
 
-    mov DX, offset InputFileName[2]
-    mov BX, offset OutputFileName[2]
+    mov CL, InputFileName[1]
+    mov DI, offset InputFileName[2]
+
+    call skip_space_and_tab
+    mov DX, DI
+    call add_zero_to_end
+    
+    mov CL, OutputFileName[1]
+    mov DI, offset OutputFileName[2]
+    
+    call skip_space_and_tab
+    mov BX, DI
+    call add_zero_to_end
 
     jmp open_input_file
 
@@ -46,28 +57,25 @@ read_psp_parameters:
     cld
     xor CX, CX
     mov CL, ES:80h
+    mov AL, ' '
     mov DI, 81h
     
-    mov AL, ' '
     repe scasb
     dec DI
     inc CL
     mov DX, DI
 
-    mov AL, ' '
     repne scasb
     dec DI
     inc CL
     mov byte ptr [DI], 0
 
     inc DI
-    mov AL, ' '
     repe scasb
     dec DI
     inc CL
     mov BX, DI
 
-    mov AL, ' '
     repne scasb
     dec DI
     mov byte ptr [DI], 0
@@ -89,8 +97,8 @@ openInputOK:
 
 ;------------------------- Read input file ---------------------------
 
-ReadFile InputDescriptor, InputBuffer, InputBufferSize, ByteInBuffer
-CloseFile InputDescriptor    
+_read_file_ InputDescriptor, InputBuffer, InputBufferSize, ByteInBuffer
+_close_file_ InputDescriptor    
 
 ;------------------------- Open output file --------------------------
 
@@ -127,7 +135,7 @@ mov SI, offset InputBuffer
 mov DI, offset OutputBuffer
 cycle:
     mov AL, byte ptr [SI]
-    cmp AL, Space
+    cmp AL, SPACE
     je is_space
     mov AX, [SI]
     cmp AX, VK
@@ -161,6 +169,7 @@ cycle:
 mov CX, ByteInBuffer
 mov SI, offset OutputBuffer
 _new_line_
+_new_line_
 print_buffer:
     mov AL, [SI]
     _print_letter_ AL
@@ -169,19 +178,63 @@ print_buffer:
 
 ;------------------------ Write output file --------------------------
 
-WriteFile OutputDescriptor, OutputBuffer, ByteInBuffer
-CloseFile OutputDescriptor
+_write_file_ OutputDescriptor, OutputBuffer, ByteInBuffer
+_close_file_ OutputDescriptor
 
 ;---------------------------------------------------------------------
 
 _end:
 int 20h
 
+;=========================== Procedures ==============================
+
+;----------------------- Skip SPACE and TAB --------------------------
+
+skip_space_and_tab proc
+    push AX
+    continue_1:
+            mov AL, SPACE
+            repe scasb
+            dec DI
+            mov AL, TAB
+            repe scasb
+            dec DI
+            mov AL, byte ptr [DI]
+            cmp AL, SPACE
+            je continue_1
+    
+    pop AX
+    ret
+skip_space_and_tab endp
+
+;----------------------- Add ZERO to ASCII --------------------------
+
+add_zero_to_end proc
+    push AX
+    mov SI, DI
+    continue_2:
+        mov AL, byte ptr [SI]
+        cmp AL, SPACE
+        je add_zero
+        cmp AL, TAB
+        je add_zero
+        cmp AL, CR
+        je add_zero
+        inc SI
+        jmp continue_2
+    add_zero:
+        mov [SI], 0
+    pop AX
+    ret
+add_zero_to_end endp
+
+;---------------------------------------------------------------------
+
 ;=============================== DATA ================================
 
     CR                  EQU 0Dh
     LF                  EQU 0Ah
-    Space               EQU 20h
+    SPACE               EQU 20h
     TAB                 EQU 09h
 
     VK                  EQU 4B56h ; eng
@@ -189,11 +242,14 @@ int 20h
     ;VK                  EQU 0CAC2h ; rus
     ;PS                  EQU 0D1CFh ; rus
 
-    InputBufferSize     EQU 10000
-    OutputBufferSize    EQU 20000
+    ;InputBufferSize     EQU 10000
+    ;OutputBufferSize    EQU 20000
     
-    InputFileName       DB  14,0,14 dup (0)
-    OutputFileName      DB  14,0,14 dup (0)
+    InputBufferSize     EQU 5
+    OutputBufferSize    EQU 5
+    
+    InputFileName       DB  30,0,30 dup (0)
+    OutputFileName      DB  30,0,30 dup (0)
 
     InputDescriptor     DW  ?
     OutputDescriptor    DW  ?

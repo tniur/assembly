@@ -43,7 +43,7 @@ endm
 
 ;============================= Read File =============================
 
-ReadFile macro Descriptor, Buffer, Counter, RealRead
+_read_file_ macro Descriptor, Buffer, Counter, RealRead
 local read_error, read_success, skip
     push AX
     push BX
@@ -79,7 +79,7 @@ endm
 
 ;============================ Write File =============================
 
-WriteFile macro Descriptor, Buffer, Counter
+_write_file_ macro Descriptor, Buffer, Counter
 local write_error, write_success, skip
     push AX
     push BX
@@ -114,7 +114,7 @@ endm
 
 ;============================ Close File =============================
 
-CloseFile macro Descriptor
+_close_file_ macro Descriptor
 local close_success, close_error, skip
     push AX
     push BX
