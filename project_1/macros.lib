@@ -13,15 +13,6 @@ _print_letter_ macro letter
     pop AX
 endm
 
-;========================== Start new line ===========================
-
-_new_line_ macro
-
-    _print_letter_ CR
-    _print_letter_ LF
-
-endm
-
 ;========================== Print Message ============================
 
 _print_message_ macro message
@@ -61,12 +52,12 @@ local read_error, read_success, skip
     
     read_success:
         mov RealRead, AX
-        _new_line_
+        call new_line
         _print_message_ '*** Read Success ***'
         jmp skip
     
     read_error:
-        _new_line_
+        call new_line
         _print_message_ '!!! Read Error !!!'
         jmp _end
 
@@ -96,12 +87,12 @@ local write_error, write_success, skip
     jmp write_error
 
     write_success:
-        _new_line_
+        call new_line
         _print_message_ '*** Write Success ***'
         jmp skip
 
     write_error:
-        _new_line_
+        call new_line
         _print_message_ '!!! Write Error !!!'
         jmp _end
 
@@ -126,12 +117,12 @@ local close_success, close_error, skip
     jmp close_error
     
     close_success:
-        _new_line_
+        call new_line
         _print_message_ '*** Close Success ***'
         jmp skip
 
     close_error:
-        _new_line_
+        call new_line
         _print_message_ '!!! Close Error !!!'
 
     skip:

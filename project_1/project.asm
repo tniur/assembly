@@ -4,6 +4,7 @@ code_seg segment
 include macros.lib
 
 ;=============================== Start ===============================
+
 start:
 
 ;-------------------------- Check Parameters -------------------------
@@ -18,15 +19,14 @@ check_parameters:
 ;---------------------------- Ask Filenames --------------------------
 
 ask_filenames:
-
     mov AH, 0Ah
 
-    _new_line_
+    call new_line
     _print_message_ 'Input filename for read > '
     lea DX, InputFileName
     int 21h
 
-    _new_line_
+    call new_line
     _print_message_ 'Input filename for write > '
     lea DX, OutputFileName
     int 21h
@@ -86,13 +86,13 @@ open_input_file:
     mov AX, 3D00h
     int 21h
     jnc openInputOK
-    _new_line_
+    call new_line
     _print_message_ '*** ERROR open input file ***'
     jmp _end
 
 openInputOK:
     mov InputDescriptor, AX
-    _new_line_
+    call new_line
     _print_message_ '*** SUCCESS open input file ***'
 
 ;------------------------- Read input file ---------------------------
@@ -113,7 +113,7 @@ open_output_file:
 
 openOutputOK:
     mov OutputDescriptor, AX
-    _new_line_
+    call new_line
     _print_message_ '*** SUCCESS open output file ***'
     jmp work_with_buffer
 
@@ -123,7 +123,7 @@ openInputLikeOutput:
     mov AX, 3D01h
     int 21h
     mov OutputDescriptor, AX
-    _new_line_
+    call new_line
     _print_message_ '*** SUCCESS open output file (input)***'
     
 work_with_buffer:
@@ -134,42 +134,37 @@ mov CX, ByteInBuffer
 mov SI, offset InputBuffer
 mov DI, offset OutputBuffer
 cycle:
-    mov AL, byte ptr [SI]
+    mov AL, [SI]
     cmp AL, SPACE
     je is_space
-    mov AX, [SI]
-    cmp AX, VK
-    je is_VK
+    cmp AL, LF ; ДЛЯ РАБОТЫ НА ВИНДЕ ЗАМЕНИТЬ НА CR
+    je is_CR
 
-    mov AL, byte ptr [SI] 
-    mov byte ptr [DI], AL
+    mov AL, [SI]
+    mov [DI], AL
     jmp next
 
     is_space:
-        mov AL, TAB
-        mov byte ptr [DI], AL
+        mov [DI], TAB
         jmp next
     
-    is_VK:
-        mov word ptr [DI], AX
-        add DI, 2
-        mov AX, PS
-        mov word ptr [DI], AX
-        inc SI
+    is_CR:
+        mov [DI], AL
         inc DI
-        add ByteInBuffer, 2
+        mov [DI], LF
+        inc ByteInBuffer
     
     next:
-    inc SI
-    inc DI
-    loop cycle
+        inc SI
+        inc DI
+        loop cycle
 
 ;------------------------ Print new buffer ---------------------------
 
 mov CX, ByteInBuffer
 mov SI, offset OutputBuffer
-_new_line_
-_new_line_
+call new_line
+call new_line
 print_buffer:
     mov AL, [SI]
     _print_letter_ AL
@@ -187,6 +182,14 @@ _end:
 int 20h
 
 ;=========================== Procedures ==============================
+
+;----------------------------- New line ------------------------------
+
+new_line proc
+    _print_letter_ LF
+    _print_letter_ CR
+    ret
+new_line endp
 
 ;----------------------- Skip SPACE and TAB --------------------------
 
@@ -223,7 +226,7 @@ add_zero_to_end proc
         inc SI
         jmp continue_2
     add_zero:
-        mov [SI], 0
+        mov byte ptr [SI], 0
     pop AX
     ret
 add_zero_to_end endp
@@ -236,17 +239,9 @@ add_zero_to_end endp
     LF                  EQU 0Ah
     SPACE               EQU 20h
     TAB                 EQU 09h
-
-    VK                  EQU 4B56h ; eng
-    PS                  EQU 5350h ; eng
-    ;VK                  EQU 0CAC2h ; rus
-    ;PS                  EQU 0D1CFh ; rus
-
-    ;InputBufferSize     EQU 10000
-    ;OutputBufferSize    EQU 20000
     
-    InputBufferSize     EQU 5
-    OutputBufferSize    EQU 5
+    InputBufferSize     EQU 10000
+    OutputBufferSize    EQU 20000
     
     InputFileName       DB  30,0,30 dup (0)
     OutputFileName      DB  30,0,30 dup (0)
