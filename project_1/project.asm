@@ -86,19 +86,11 @@ open_input_file:
     mov AX, 3D00h
     int 21h
     jnc openInputOK
-    call new_line
-    _print_message_ '*** ERROR open input file ***'
+    _print_error_ '*** Error opening the input file ***'
     jmp _end
 
 openInputOK:
-    mov InputDescriptor, AX
-    call new_line
-    _print_message_ '*** SUCCESS open input file ***'
-
-;------------------------- Read input file ---------------------------
-
-_read_file_ InputDescriptor, InputBuffer, InputBufferSize, ByteInBuffer
-_close_file_ InputDescriptor    
+    mov InputDescriptor, AX    
 
 ;------------------------- Open output file --------------------------
 
@@ -109,74 +101,50 @@ open_output_file:
     int 21h
     pop DX
     jnc openOutputOK
-    jmp openInputLikeOutput
+    
+openInputLikeOutput:
+    _print_error_ '*** Error open the output file ***'
+    jmp _end
+    ;mov AH, 3Ch
+    ;int 21h
+    ;mov AX, 3D01h
+    ;int 21h
+    ;mov OutputDescriptor, AX
+    ;call new_line
+    ;_print_message_ '*** SUCCESS open output file (input)***'
 
 openOutputOK:
     mov OutputDescriptor, AX
+    jmp main
+    
+;------------------------------ Main ------------------------------
+
+main:
     call new_line
-    _print_message_ '*** SUCCESS open output file ***'
-    jmp work_with_buffer
+    read_file:
+        _read_file_ InputDescriptor, InputBuffer, InputBufferSize, ByteInInBuffer
+        cmp ByteInInBuffer, InputBufferSize
+        je work_with_file
+        jmp end_read
 
-openInputLikeOutput:
-    mov AH, 3Ch
-    int 21h
-    mov AX, 3D01h
-    int 21h
-    mov OutputDescriptor, AX
-    call new_line
-    _print_message_ '*** SUCCESS open output file (input)***'
+    work_with_file:
+        _buffer_proc_ ByteInInBuffer, ByteInOutBuffer, InputBuffer, OutputBuffer
+        _print_buffer_ ByteInOutBuffer, OutputBuffer
+        _write_file_ OutputDescriptor, OutputBuffer, ByteInOutBuffer
+        jmp read_file
     
-work_with_buffer:
+    end_read:
+        cmp ByteInInBuffer, 0
+        jne last_read
+        jmp _end
 
-;------------------------ Work with buffer ---------------------------
+        last_read:
+            _buffer_proc_ ByteInInBuffer, ByteInOutBuffer, InputBuffer, OutputBuffer
+            _print_buffer_ ByteInOutBuffer, OutputBuffer
+            _write_file_ OutputDescriptor, OutputBuffer, ByteInOutBuffer
 
-mov CX, ByteInBuffer
-mov SI, offset InputBuffer
-mov DI, offset OutputBuffer
-cycle:
-    mov AL, [SI]
-    cmp AL, SPACE
-    je is_space
-    cmp AL, LF ; ДЛЯ РАБОТЫ НА ВИНДЕ ЗАМЕНИТЬ НА CR
-    je is_CR
-
-    mov AL, [SI]
-    mov [DI], AL
-    jmp next
-
-    is_space:
-        mov [DI], TAB
-        jmp next
-    
-    is_CR:
-        mov [DI], AL
-        inc DI
-        mov [DI], LF
-        inc ByteInBuffer
-    
-    next:
-        inc SI
-        inc DI
-        loop cycle
-
-;------------------------ Print new buffer ---------------------------
-
-mov CX, ByteInBuffer
-mov SI, offset OutputBuffer
-call new_line
-call new_line
-print_buffer:
-    mov AL, [SI]
-    _print_letter_ AL
-    inc SI
-    loop print_buffer
-
-;------------------------ Write output file --------------------------
-
-_write_file_ OutputDescriptor, OutputBuffer, ByteInBuffer
+_close_file_ InputDescriptor
 _close_file_ OutputDescriptor
-
-;---------------------------------------------------------------------
 
 _end:
 int 20h
@@ -193,7 +161,7 @@ new_line endp
 
 ;----------------------- Skip SPACE and TAB --------------------------
 
-skip_space_and_tab proc
+skip_space_and_tab proc near
     push AX
     continue_1:
             mov AL, SPACE
@@ -212,7 +180,7 @@ skip_space_and_tab endp
 
 ;----------------------- Add ZERO to ASCII --------------------------
 
-add_zero_to_end proc
+add_zero_to_end proc near
     push AX
     mov SI, DI
     continue_2:
@@ -231,6 +199,30 @@ add_zero_to_end proc
     ret
 add_zero_to_end endp
 
+;---------------------------- Print DL -------------------------------
+
+print_DL proc near
+    push DX
+    rcr DL,4
+    call print_hex
+    pop DX
+    call print_hex
+    ret
+print_DL endp
+
+;---------------------------- Print HEX ------------------------------
+
+print_hex proc near
+        and DL, 0Fh
+        add DL, 30h
+        cmp DL, 3Ah
+        jl print
+        add DL, 07h
+        print:
+            int 21H
+            ret
+print_hex endp
+
 ;---------------------------------------------------------------------
 
 ;=============================== DATA ================================
@@ -240,8 +232,8 @@ add_zero_to_end endp
     SPACE               EQU 20h
     TAB                 EQU 09h
     
-    InputBufferSize     EQU 10000
-    OutputBufferSize    EQU 20000
+    InputBufferSize     EQU 1
+    OutputBufferSize    EQU 2
     
     InputFileName       DB  30,0,30 dup (0)
     OutputFileName      DB  30,0,30 dup (0)
@@ -250,7 +242,8 @@ add_zero_to_end endp
     OutputDescriptor    DW  ?
     InputBuffer         DB  InputBufferSize dup (?)
     OutputBuffer        DB  OutputBufferSize dup (?)
-    ByteInBuffer        DW  ?
+    ByteInInBuffer      DW  ?
+    ByteInOutBuffer     DW  ?
 
 ;=====================================================================
 

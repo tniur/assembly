@@ -32,9 +32,48 @@ local msg, skip
     skip:
 endm
 
-;============================= Read File =============================
+;=========================== Print Word ==============================
 
-_read_file_ macro Descriptor, Buffer, Counter, RealRead
+_print_word_ macro word
+
+    push AX
+    push BX
+    push CX
+    push DX
+
+    mov BX, word
+    mov AH, 02h
+    mov DL, BH
+    call print_DL
+ 
+    mov DL, BL
+    call print_DL
+ 
+    pop DX
+    pop CX
+    pop BX
+    pop AX
+endm
+
+;============================ Print ERROR =============================
+
+_print_error_ macro error_message
+
+    call new_line
+    call new_line
+    
+    _print_message_ error_message
+    call new_line
+    _print_message_ 'Type of error: '
+    _print_word_ AX
+
+    call new_line
+    call new_line
+endm
+
+;============================= Read File ==============================
+
+_read_file_ macro Descriptor, Buffer, BufferSize, ReadByte
 local read_error, read_success, skip
     push AX
     push BX
@@ -43,7 +82,7 @@ local read_error, read_success, skip
 
     clc
     mov BX, Descriptor
-    mov CX, Counter
+    mov CX, BufferSize
     lea DX, Buffer
     mov AH, 3Fh
     int 21h
@@ -51,14 +90,11 @@ local read_error, read_success, skip
     jmp read_error  
     
     read_success:
-        mov RealRead, AX
-        call new_line
-        _print_message_ '*** Read Success ***'
+        mov ReadByte, AX
         jmp skip
     
     read_error:
-        call new_line
-        _print_message_ '!!! Read Error !!!'
+        _print_error_ '*** Error read the input file ***'
         jmp _end
 
     skip: 
@@ -68,10 +104,57 @@ local read_error, read_success, skip
         pop AX
 endm
 
+;========================= Buffer Processing ===========================
+
+_buffer_proc_ macro ByteInInBuf, ByteInOutBuf, InputBuf, OutputBuf
+local cycle, is_space, is_CR, next
+    push CX
+    push SI
+    push DI
+    push AX
+
+    mov CX, ByteInInBuf
+    mov SI, offset InputBuf
+    mov DI, offset OutputBuf
+    cycle:
+        mov AL, [SI]
+        cmp AL, SPACE
+        je is_space
+        cmp AL, LF ; ДЛЯ РАБОТЫ НА ВИНДЕ ЗАМЕНИТЬ НА CR
+        je is_CR
+
+        mov AL, [SI]
+        mov [DI], AL
+        jmp next
+
+    is_space:
+        mov byte ptr [DI], TAB
+        jmp next
+    
+    is_CR:
+        mov [DI], AL
+        inc DI
+        mov byte ptr [DI], LF
+        inc ByteInInBuf
+    
+    next:
+        inc SI
+        inc DI
+        loop cycle
+    
+    mov AX, ByteInInBuf
+    mov ByteInOutBuf, AX
+    
+    pop AX
+    pop DI
+    pop SI
+    pop CX
+endm
+
 ;============================ Write File =============================
 
 _write_file_ macro Descriptor, Buffer, Counter
-local write_error, write_success, skip
+local write_error, skip
     push AX
     push BX
     push DX
@@ -83,17 +166,10 @@ local write_error, write_success, skip
     lea DX, Buffer
     mov AH, 40h
     int 21h
-    jnc write_success
-    jmp write_error
-
-    write_success:
-        call new_line
-        _print_message_ '*** Write Success ***'
-        jmp skip
+    jnc skip
 
     write_error:
-        call new_line
-        _print_message_ '!!! Write Error !!!'
+        _print_error_ '*** Error write to the output file ***'
         jmp _end
 
     skip:
@@ -106,29 +182,43 @@ endm
 ;============================ Close File =============================
 
 _close_file_ macro Descriptor
-local close_success, close_error, skip
+local close_error, skip
     push AX
     push BX
     
     clc
     mov BX, Descriptor
     mov AH, 3Eh
-    jnc close_success
-    jmp close_error
-    
-    close_success:
-        call new_line
-        _print_message_ '*** Close Success ***'
-        jmp skip
+    jnc skip
 
     close_error:
-        call new_line
-        _print_message_ '!!! Close Error !!!'
+        _print_error_ '*** Error close the file ***'
 
     skip:
     pop BX  
     pop AX
+endm
 
+;=========================== Print Buffer ===============================
+
+_print_buffer_ macro Bytes, Buffer
+local print_buffer
+    push CX
+    push SI
+    push AX
+
+    mov CX, Bytes
+    mov SI, offset Buffer
+    
+    print_buffer:
+        mov AL, [SI]
+        _print_letter_ AL
+        inc SI
+        loop print_buffer
+
+    pop AX
+    pop SI
+    pop CX
 endm
 
 ;=====================================================================
