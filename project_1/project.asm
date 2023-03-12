@@ -103,15 +103,9 @@ open_output_file:
     jnc openOutputOK
     
 openInputLikeOutput:
-    _print_error_ '*** Error open the output file ***'
-    jmp _end
-    ;mov AH, 3Ch
-    ;int 21h
-    ;mov AX, 3D01h
-    ;int 21h
-    ;mov OutputDescriptor, AX
-    ;call new_line
-    ;_print_message_ '*** SUCCESS open output file (input)***'
+    mov AX, 3D01h
+    int 21h
+    mov OutputDescriptor, AX
 
 openOutputOK:
     mov OutputDescriptor, AX

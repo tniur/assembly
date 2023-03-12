@@ -199,7 +199,7 @@ local close_error, skip
     pop AX
 endm
 
-;=========================== Print Buffer ===============================
+;=========================== Print Buffer =============================
 
 _print_buffer_ macro Bytes, Buffer
 local print_buffer
