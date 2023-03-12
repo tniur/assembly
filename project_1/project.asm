@@ -21,7 +21,6 @@ check_parameters:
 ask_filenames:
     mov AH, 0Ah
 
-    call new_line
     _print_message_ 'Input filename for read > '
     lea DX, InputFileName
     int 21h
@@ -30,6 +29,7 @@ ask_filenames:
     _print_message_ 'Input filename for write > '
     lea DX, OutputFileName
     int 21h
+    call new_line
     
     cld
     xor CX, CX
@@ -52,8 +52,7 @@ ask_filenames:
 
 ;-----------------------  Read PSP Parameters -------------------------
 
-read_psp_parameters:    
-    
+read_psp_parameters:
     cld
     xor CX, CX
     mov CL, ES:80h
@@ -80,7 +79,7 @@ read_psp_parameters:
     dec DI
     mov byte ptr [DI], 0
 
-;-------------------------- Open input file ---------------------------
+;-------------------------- Open input file --------------------------
 
 open_input_file:
     mov AX, 3D00h
@@ -100,45 +99,43 @@ open_output_file:
     mov DX, BX
     int 21h
     pop DX
-    jnc openOutputOK
+    jnc openOutput
     
 openInputLikeOutput:
     mov AX, 3D01h
     int 21h
-    mov OutputDescriptor, AX
 
-openOutputOK:
+openOutput:
     mov OutputDescriptor, AX
-    jmp main
     
 ;------------------------------ Main ------------------------------
 
 main:
-    call new_line
     read_file:
-        _read_file_ InputDescriptor, InputBuffer, InputBufferSize, ByteInInBuffer
-        cmp ByteInInBuffer, InputBufferSize
+        _read_file_ InputDescriptor, InputBuffer, InputBufferSize, InpBuffRealBytes
+        cmp InpBuffRealBytes, InputBufferSize
         je work_with_file
         jmp end_read
 
     work_with_file:
-        _buffer_proc_ ByteInInBuffer, ByteInOutBuffer, InputBuffer, OutputBuffer
-        _print_buffer_ ByteInOutBuffer, OutputBuffer
-        _write_file_ OutputDescriptor, OutputBuffer, ByteInOutBuffer
+        _buffer_proc_ InpBuffRealBytes, OutBuffRealBytes, InputBuffer, OutputBuffer
+        _print_buffer_ OutBuffRealBytes, OutputBuffer
+        _write_file_ OutputDescriptor, OutputBuffer, OutBuffRealBytes
         jmp read_file
     
     end_read:
-        cmp ByteInInBuffer, 0
+        cmp InpBuffRealBytes, 0
         jne last_read
-        jmp _end
+        jmp close_files
 
         last_read:
-            _buffer_proc_ ByteInInBuffer, ByteInOutBuffer, InputBuffer, OutputBuffer
-            _print_buffer_ ByteInOutBuffer, OutputBuffer
-            _write_file_ OutputDescriptor, OutputBuffer, ByteInOutBuffer
+            _buffer_proc_ InpBuffRealBytes, OutBuffRealBytes, InputBuffer, OutputBuffer
+            _print_buffer_ OutBuffRealBytes, OutputBuffer
+            _write_file_ OutputDescriptor, OutputBuffer, OutBuffRealBytes
 
-_close_file_ InputDescriptor
-_close_file_ OutputDescriptor
+    close_files:
+        _close_file_ InputDescriptor
+        _close_file_ OutputDescriptor
 
 _end:
 int 20h
@@ -236,8 +233,8 @@ print_hex endp
     OutputDescriptor    DW  ?
     InputBuffer         DB  InputBufferSize dup (?)
     OutputBuffer        DB  OutputBufferSize dup (?)
-    ByteInInBuffer      DW  ?
-    ByteInOutBuffer     DW  ?
+    InpBuffRealBytes    DW  ?
+    OutBuffRealBytes    DW  ?
 
 ;=====================================================================
 

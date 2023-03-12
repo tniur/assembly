@@ -60,15 +60,10 @@ endm
 _print_error_ macro error_message
 
     call new_line
-    call new_line
-    
     _print_message_ error_message
     call new_line
     _print_message_ 'Type of error: '
     _print_word_ AX
-
-    call new_line
-    call new_line
 endm
 
 ;============================= Read File ==============================
@@ -106,14 +101,14 @@ endm
 
 ;========================= Buffer Processing ===========================
 
-_buffer_proc_ macro ByteInInBuf, ByteInOutBuf, InputBuf, OutputBuf
+_buffer_proc_ macro InpBuffBytes, OutBuffBytes, InputBuf, OutputBuf
 local cycle, is_space, is_CR, next
     push CX
     push SI
     push DI
     push AX
 
-    mov CX, ByteInInBuf
+    mov CX, InpBuffBytes
     mov SI, offset InputBuf
     mov DI, offset OutputBuf
     cycle:
@@ -135,15 +130,15 @@ local cycle, is_space, is_CR, next
         mov [DI], AL
         inc DI
         mov byte ptr [DI], LF
-        inc ByteInInBuf
+        inc InpBuffBytes
     
     next:
         inc SI
         inc DI
         loop cycle
     
-    mov AX, ByteInInBuf
-    mov ByteInOutBuf, AX
+    mov AX, InpBuffBytes
+    mov OutBuffBytes, AX
     
     pop AX
     pop DI
