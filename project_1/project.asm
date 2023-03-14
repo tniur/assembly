@@ -65,9 +65,12 @@ read_psp_parameters:
     mov DX, DI
 
     repne scasb
+    cmp CL, 0
+    je _end_param
     dec DI
     inc CL
-    mov byte ptr [DI], 0
+    _end_param:
+        mov byte ptr [DI], 0
 
     inc DI
     repe scasb
